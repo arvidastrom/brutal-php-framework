@@ -56,12 +56,10 @@ require_once(SITE_ROOT . '/app/app.inc');
 R::setup('mysql:host='. DB_HOST .';dbname='. DB_NAME, DB_USER, DB_PASS);
 
 if (DEVELOPMENT) {
-	$queryLogger = RedBean_Plugin_QueryLogger::getInstanceAndAttach(
-		R::getDatabaseAdapter()
-	);
+	$queryLogger = RedBean_Plugin_QueryLogger::getInstanceAndAttach(R::getDatabaseAdapter());
 }
 else {
-	R::freeze( true );
+	R::freeze(true);
 }
 
 Core::init();
