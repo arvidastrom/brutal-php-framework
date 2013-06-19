@@ -11,4 +11,8 @@ Class Session {
 
 		return $default;
 	}
+	
+	public static function del($key) {
+		unset($_SESSION[SESSION_PREFIX][$key]);
+	}
 }
