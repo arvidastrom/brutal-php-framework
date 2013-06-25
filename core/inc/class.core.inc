@@ -263,6 +263,43 @@ class Core {
 		self::$_content = 'Page not found: ' . Url::request_path();
 	}
 
+	/**
+	 * Parse theme info file and add css and javascript
+	 */
+	private static function parse_theme_config() {
+		$theme = Template::get_theme();
+
+		// parse the selected theme's info file and add css and javascripts
+		$config_file = SITE_ROOT . '/app/themes/' . $theme . '/theme.inc';
+
+		include $config_file;
+
+		$parsed_css = array();
+
+		foreach ($css as $key => $stylesheet) {
+			if (filter_var($stylesheet, FILTER_VALIDATE_URL) === false && substr($stylesheet, 0, 2) != '//') {
+				$parsed_css[$key] = Url::generate('app/themes/' . $theme . '/' . $stylesheet);
+			}
+			else {
+				$parsed_css[$key] = $stylesheet;
+			}
+		}
+
+		Core::add_css($parsed_css);
+
+		$parsed_js = array();
+
+		foreach ($js as $key => $script) {
+			if (filter_var($script, FILTER_VALIDATE_URL) === false && substr($script, 0, 2) != '//') {
+				$parsed_js[$key] = Url::generate('app/themes/' . $theme . '/' . $script);
+			}
+			else {
+				$parsed_js[$key] = $script;
+			}
+		}
+
+		Core::add_js($parsed_js);
+	}
 
 	/**
 	 * Init method, called after configuration and files are loaded
@@ -306,6 +343,8 @@ class Core {
 		else {
 			self::error_404();
 		}
+
+		self::parse_theme_config();
 	}
 
 	// print the final page
@@ -382,7 +421,6 @@ class Core {
 			print self::$_content;
 		}
 		elseif (self::$_deliver_type == PAGE_CALLBACK_AJAX) {
-
 			header('Content-type: application/json');
 			print json_encode(self::$_content);
 		}

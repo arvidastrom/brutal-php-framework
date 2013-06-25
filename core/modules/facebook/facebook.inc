@@ -1,39 +1,5 @@
 <?php
-require SITE_ROOT . '/core/modules/facebook/facebook.php';
-
-function facebook_init() {
-	$js = "
-		window.fbAsyncInit = function() {
-			// init the FB JS SDK
-			FB.init({
-				appId      : '" . FACEBOOK_APP_ID . "', // App ID from the app dashboard
-				channelUrl : '" . Url::generate('modules/facebook/channel.html') . "', // Channel file for x-domain comms
-				status     : true, // Check Facebook Login status
-				xfbml      : true  // Look for social plugins on the page
-			});
-	
-			if (jQuery) {
-				(function () {
-					jQuery.fn.fbready = function(callback) {
-
-				};
-				// Additional initialization code such as adding Event Listeners goes here
-				jQuery(window).trigger('fbready');
-			}
-		};
-
-		// Load the SDK asynchronously
-		(function(d, s, id){
-			var js, fjs = d.getElementsByTagName(s)[0];
-			if (d.getElementById(id)) {return;}
-			js = d.createElement(s); js.id = id;
-			js.src = '//connect.facebook.net/" . FACEBOOK_LOCALE . "/all.js';
-			fjs.parentNode.insertBefore(js, fjs);
-		}(document, 'script', 'facebook-jssdk'));
-	";
-
-	Core::add_js('facebook', $js);
-}
+require SITE_ROOT . '/core/modules/facebook/facebook_sdk/facebook.php';
 
 function facebook_js(&$js) {
 	$js['facebook'] = "
