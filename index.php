@@ -40,9 +40,6 @@ else {
 	error_reporting(0);
 }
 
-// upload directory
-define('UPLOAD_DIR', SITE_ROOT . '/app/uploads');
-
 // normal page view, prints html and page template files wrapped around content
 define('PAGE_CALLBACK_NORMAL', 0);
 
@@ -53,11 +50,30 @@ define('PAGE_CALLBACK_AJAX', 1);
 define('PAGE_CALLBACK_BLANK', 2);
 
 // includes classes
-require_once(SITE_ROOT . '/core/inc/class.url.inc');
-require_once(SITE_ROOT . '/core/inc/class.session.inc');
-require_once(SITE_ROOT . '/core/inc/class.database.inc');
-require_once(SITE_ROOT . '/core/inc/class.template.inc');
-require_once(SITE_ROOT . '/core/inc/class.core.inc');
+require_once(SITE_ROOT . '/core/includes/class.url.inc');
+require_once(SITE_ROOT . '/core/includes/class.session.inc');
+require_once(SITE_ROOT . '/core/includes/class.database.inc');
+require_once(SITE_ROOT . '/core/includes/class.template.inc');
+require_once(SITE_ROOT . '/core/includes/class.core.inc');
+
+// external libraries
+require_once(SITE_ROOT . '/core/libraries/RedBeanPHP3_4_7/rb.php');
+require_once(SITE_ROOT . '/core/libraries/Swift-5.0.1/lib/swift_required.php');
+
+// configure redbean
+foreach ($databases as $dbkey => $dbinfo) {
+	if ($dbkey == 'default') {
+		R::setup('mysql:host=' . $dbinfo['host'] . ';dbname=' . $dbinfo['name'], $dbinfo['user'], $dbinfo['pass']);
+
+		// dont change the database after deployment
+		if (!DEVELOPMENT) {
+			R::freeze(true);
+		}
+	}
+	else {
+		R::addDatabase($dbkey, 'mysql:host=' . $dbinfo['host'] . ';dbname=' . $dbinfo['name'], $dbinfo['user'], $dbinfo['pass'], true);
+	}
+}
 
 // include modules
 if (FACEBOOK) {

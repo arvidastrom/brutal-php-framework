@@ -1,6 +1,6 @@
 (function ($, window, document, undefined) {
 	/*$(window).load(function () {
-		App.fbready(function () {
+		App.Facebook.ready(function () {
 			setInterval(function () {
 				FB.Canvas.setSize({
 					height: $('body').outerHeight(true)

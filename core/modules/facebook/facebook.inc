@@ -7,12 +7,26 @@ function facebook_js(&$js) {
 			var fbready = false;
 			var readycallbacks = [];
 
-			App.fbready = function (callback) {
-				if (fbready) {
-					callback();
-				}
-				else {
-					readycallbacks.push(callback);
+			App.Facebook = {
+				ready: function (callback) {
+					if (fbready) {
+						callback.apply(this);
+					}
+					else {
+						readycallbacks.push(callback);
+					}
+				},
+				statusOrLogin: function (callback) {
+					FB.getLoginStatus(function(response) {
+						if (response.status === 'connected') {
+							callback.apply(FB, [response]);
+						}
+						else {
+							FB.login(function(response) {
+								callback.apply(FB, [response]);
+							});
+						}
+					});
 				}
 			};
 
@@ -29,7 +43,7 @@ function facebook_js(&$js) {
 				
 				if (readycallbacks.length) {
 					for (var i=0, c=readycallbacks.length; i<c; i++) {
-						readycallbacks[i]();
+						readycallbacks[i].apply(App.Facebook);
 					}
 				}
 			};
