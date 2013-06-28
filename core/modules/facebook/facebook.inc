@@ -1,89 +1,89 @@
 <?php
+// include facebook php sdk
 require SITE_ROOT . '/core/modules/facebook/facebook_sdk/facebook.php';
 
-function facebook_js(&$js) {
-	$js['facebook'] = "
-		(function () {
-			var fbready = false;
-			var readycallbacks = [];
+/**
+ * Hooks
+ */
+function facebook_hook_js(&$js) {
+	$settings = facebook_settings();
 
-			App.Facebook = {
-				ready: function (callback) {
-					if (fbready) {
-						callback.apply(this);
-					}
-					else {
-						readycallbacks.push(callback);
-					}
-				},
-				statusOrLogin: function (callback) {
-					FB.getLoginStatus(function(response) {
-						if (response.status === 'connected') {
-							callback.apply(FB, [response]);
-						}
-						else {
-							FB.login(function(response) {
-								callback.apply(FB, [response]);
-							});
-						}
-					});
-				}
-			};
+	if ($settings != null) {
+		// setup array for replacing variables inside the js file
+		$variables = array(
+			'{#appid#}' => $settings['app_id'],
+			'{#channel#}' => Url::generate('modules/facebook/channel.html'),
+		);
 
-			window.fbAsyncInit = function() {
-				// init the FB JS SDK
-				FB.init({
-					appId      : '" . FACEBOOK_APP_ID . "', // App ID from the app dashboard
-					channelUrl : '" . Url::generate('modules/facebook/channel.html') . "', // Channel file for x-domain comms
-					status     : true, // Check Facebook Login status
-					xfbml      : true  // Look for social plugins on the page
-				});
-		
-				fbready = true;
-				
-				if (readycallbacks.length) {
-					for (var i=0, c=readycallbacks.length; i<c; i++) {
-						readycallbacks[i].apply(App.Facebook);
-					}
-				}
-			};
-		})();
+		// get the file into a string
+		$facebook_js = file_get_contents(SITE_ROOT . '/core/modules/facebook/facebook.js');
 
-		// Load the SDK asynchronously
-		(function(d, s, id){
-			var js, fjs = d.getElementsByTagName(s)[0];
-			if (d.getElementById(id)) {return;}
-			js = d.createElement(s); js.id = id;
-			js.src = '//connect.facebook.net/" . FACEBOOK_LOCALE . "/all.js';
-			fjs.parentNode.insertBefore(js, fjs);
-		}(document, 'script', 'facebook-jssdk'));
-	";
+		// replace all variables
+		$facebook_js = str_replace(array_keys($variables), array_values($variables), $facebook_js);
+
+		// add some js!
+		$js['script'][] = array(
+			'type' => 'inline',
+			'data' => $facebook_js,
+		);
+	}
 }
 
-function facebook_urls(&$urls) {
-	$urls['modules/facebook/channel.html'] = array(
-		'callback' => '_facebook_page_channel',
-		'type' => PAGE_CALLBACK_BLANK,
-	); 
+function facebook_hook_urls(&$urls) {
+	$settings = facebook_settings();
+
+	if ($settings != null) {
+		$urls['modules/facebook/channel.html'] = array(
+			'callback' => 'facebook_page_channel',
+			'type' => Core::PAGE_CALLBACK_BLANK,
+		);
+	}
 }
 
-function _facebook_page_channel() {
-	$cache_expire = 60*60*24*365;
-	header("Pragma: public");
-	header("Cache-Control: max-age=".$cache_expire);
-	header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$cache_expire) . ' GMT');
 
-	return '<script src="//connect.facebook.net/' . FACEBOOK_LOCALE . '/all.js"></script>';
+/**
+ * Page callbacks
+ */
+function facebook_page_channel() {
+	$settings = facebook_settings();
+
+	if ($settings != null) {
+		$cache_expire = 60*60*24*365;
+		header("Pragma: public");
+		header("Cache-Control: max-age=".$cache_expire);
+		header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$cache_expire) . ' GMT');
+
+		return '<script src="//connect.facebook.net/' . $settings['app_locale'] . '/all.js"></script>';
+	}
+}
+
+
+/**
+ * Functions
+ */
+function facebook_settings($arr = null) {
+	static $settings = null;
+
+	if ($arr !== null) {
+		$settings = $arr;
+	}
+	else {
+		return $settings;
+	}
 }
 
 function facebook_get_object() {
 	static $facebook = null;
 
 	if ($facebook === null) {
-		$facebook = new Facebook(array(
-			'appId'  => FACEBOOK_APP_ID,
-			'secret' => FACEBOOK_APP_SECRET,
-		));
+		$settings = facebook_settings();
+
+		if ($settings != null) {
+			$facebook = new Facebook(array(
+				'appId'  => $settings['app_id'],
+				'secret' => $settings['app_secret'],
+			));
+		}
 	}
 
 	return $facebook;
@@ -92,13 +92,15 @@ function facebook_get_object() {
 function facebook_likes_page() {
 	$facebook = facebook_get_object();
 
-	$signed_request = $facebook->getSignedRequest();
+	if ($facebook != null) {
+		$signed_request = $facebook->getSignedRequest();
 
-	if ($signed_request['page']['liked'] == 1) {
-		return true;
- 	}
-	else if (isset($signed_request['page']['liked'])) {
-		return false;
+		if ($signed_request['page']['liked'] == 1) {
+			return true;
+	 	}
+		else if (isset($signed_request['page']['liked'])) {
+			return false;
+		}
 	}
 
 	return true;

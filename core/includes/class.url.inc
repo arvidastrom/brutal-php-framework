@@ -1,6 +1,7 @@
 <?php
 class Url {
-	private static $_url = null;
+	private static $url = null;
+	private static $secure_url = null;
 
 	/**
 	 * Generates an site url
@@ -13,60 +14,94 @@ class Url {
 	 *
 	 * @return string The url to the site root or the the chosen path.
 	 */
-	static function generate($path = null, $query = null) {
-		$url = self::$_url;
+	static function generate($path = null, $options = array()) {
+		$defaults = array(
+			'external' => false,
+			'absolute' => true,
+			'query' => array(),
+			'hash' => array(),
+			'https' => self::https(),
+		);
 
-		if ($url == null) {
-			// use the SITE_URL constant instead of a calculate site root if it is defined
-			if (defined('SITE_URL')) {
-				$url = SITE_URL;
+		$options = array_merge($defaults, $options);
 
-				if (self::https()) {
-					$url = str_replace('http://', 'https://', $url);
+		// skip everything that checks the site url
+		if ($options['external'] == false) {
+			$url = self::$url;
+			$secure_url = self::$secure_url;
+
+			if ($url == null) {
+				global $site_url, $secure_site_url;
+
+				// use the site_url variable if it is defined instead of auto detection
+				if (!empty($site_url)) {
+					$url = $site_url;
 				}
+				else {
+					$url = 'http://' . $_SERVER['HTTP_HOST'];
+
+					if ($_SERVER['SERVER_PORT'] != '80') {
+						$url .= ':' . $_SERVER['SERVER_PORT'];
+					}
+
+					// as the executed file url is always the index.php
+					// file as defined in the rewrite rule we can safely
+					// remove the filename from the url
+					$url .= str_replace('/index.php', '', $_SERVER['PHP_SELF']);
+				}
+
+				if (!empty($secure_site_url)) {
+					$secure_url = $secure_site_url;
+				}
+				else {
+					$secure_url = substr_replace($url, 'https://', 0, 7);
+				}
+
+				self::$url = $url;
+				self::$secure_url = $secure_url;
+			}
+
+			$build_url = $options['https'] ? $secure_url : $url;
+
+			if ($path !== null) {
+				if (substr($path, 0, 1) != '/') {
+					$path = '/' . $path;
+				}
+
+				$build_url .= $path;
 			}
 			else {
-				$url = (self::https()) ? 'https' : 'http';
-
-				$url .= '://' . $_SERVER['HTTP_HOST'];
-
-				if ($_SERVER['SERVER_PORT'] != '80') {
-					$url .= ':' . $_SERVER['SERVER_PORT'];
-				}
-
-				// as the executed file url is always the index.php
-				// file as defined in the rewrite rule we can safely
-				// remove the filename from the url
-				$url .= str_replace('/index.php', '', $_SERVER['PHP_SELF']);
+				$build_url .= '/';
 			}
 
-			self::$_url = $url;
+			$build_url = urldecode($build_url);
+		}
+		else {
+			$build_url = $path;
 		}
 
-		$site_url = $url;
-
-		if ($path !== null && substr($path, 0, 1) != '/') {
-			$path = '/' . $path;
+		if (!empty($options['query'])) {
+			$build_url .= '?' . http_build_query($options['query']);
 		}
 
-		if ($path !== null) {
-			$site_url .= $path;
+		if (!empty($options['hash'])) {
+			$build_url .= '#' . $options['hash'];
 		}
 
-		$site_url = urldecode($site_url);
+		return $build_url;
+	}
 
-		if ($query !== null) {
-			$site_url .= '?' . http_build_query($query);
-		}
+	static function generate_theme($path = null, $options = array()) {
+		$path = 'app/themes/' . Template::get_theme() . '/' . $path;
 
-		return $site_url;
+		return self::generate($path, $options);
 	}
 
 	/**
 	 * Calculates the current url
 	 *
 	 * Calculates the current url that is being requested. If the
-	 * included_query_string parameter is true it includes any query string
+	 * include_query_string parameter is true it includes any query string
 	 * thats also in the url.
 	 *
 	 * @param string $include_query_string Flag to include the query string in the returned url.
@@ -148,12 +183,12 @@ class Url {
 	 *
 	 * @return void
 	 */
-	static function redirect($url = null) {
+	static function redirect($url = null, $include_query_string = true) {
 		// reload the current page
 		if ($url === null) {
-			$url = self::current(true);
+			$url = self::current($include_query_string);
 		}
-		elseif (stripos('http', $url) === -1) {
+		elseif (stripos('http', $url) === false) {
 			$url = self::generate($url);
 		}
 		

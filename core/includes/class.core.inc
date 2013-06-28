@@ -1,116 +1,192 @@
 <?php
 class Core {
 	/**
-	 * Theme properties and methods
+	* Normal page view
+	*
+	* Prints html and page template files wrapped around the content
+	*/
+	const PAGE_CALLBACK_NORMAL = 0;
+
+	/**
+	* Json page view
+	*
+	* Prints the returned data as json encoded without html and page template
+	*/
+	const PAGE_CALLBACK_JSON = 1;
+
+	/**
+	* Blank page view
+	*
+	* Prints the returned data as plain text encoded without html and page template
+	*/
+	const PAGE_CALLBACK_BLANK = 2;
+
+	/**
+	* Stores all javascript
+	*
+	* @access private
+	* @var string
+	*/
+	private static $js = array(
+		'script' => array(),
+		'settings' => array(),
+	);
+
+	/**
+	* Stores all css
+	*
+	* @access private
+	* @var string
+	*/
+	private static $css = array();
+
+	/**
+	* The page delivery type
+	*
+	* @access private
+	* @var string
+	*/
+	private static $page_delivery_type;
+
+	/**
+	 * Add javascript files / variables to the site
 	 */
-	private static $_body_classes = array();
-	private static $_html_vars = array();
-	private static $_page_vars = array();
-	private static $_content = '';
-	private static $_js = array();
-	private static $_css = array();
-	private static $_deliver_type = PAGE_CALLBACK_NORMAL;
+	static function add_js($info, $type = 'script') {
+		// handle setting explicitly
+		if ($type == 'settings') {
+			$current_settings = self::$js['settings'];
 
-	static function add_js($mixed, $js = null) {
-		if (!is_array($mixed)) {
-			self::$_js[$mixed] = $js;
+			// merge the new settings with the current ones
+			self::$js['settings'] = array_merge_recursive($current_settings, $info);
 		}
 		else {
-			foreach ($mixed as $key => $js) {
-				self::$_js[$key] = $js;
-			}
+			// create a default options array
+			$defaults = array(
+				'type' => 'internal',
+			);
+
+			$options = array_merge($defaults, $info);
+
+			// add it to the js array
+			self::$js['script'][] = $options;
 		}
 	}
 
-	static function add_css($mixed, $css = null) {
-		if (!is_array($mixed)) {
-			self::$_css[$mixed] = $css;
+	/**
+	 * Get all or specific javascript on the site
+	 */
+	static function get_js($type = null) {
+		if ($type !== null) {
+			return self::$js[$type];
 		}
-		else {
-			foreach ($mixed as $key => $css) {
-				self::$_css[$key] = $css;
-			}
-		}
+		
+		return self::$js;
 	}
 
-	static function add_html_variables($vars) {
-		foreach ($vars as $key => $var) {
-			self::$_html_vars[$key] = $var;
-		}
+	/**
+	 * Add css files / styles to the site
+	 */
+	static function add_css($info) {
+		// create a default options array
+		$defaults = array(
+			'media' => 'all',
+			'type' => 'internal',
+		);
+
+		// overwrite any defaults
+		$options = array_merge($defaults, $info);
+
+		// add it to the css array
+		self::$css[] = $options;
 	}
 
-	static function add_page_variables($vars) {
-		foreach ($vars as $key => $var) {
-			self::$_page_vars[$key] = $var;
-		}
+	/**
+	 * Get all or specific css on the site
+	 */
+	static function get_css() {
+		return self::$css;
 	}
 
-	static function add_body_class($class) {
-		self::$_body_classes[] = $class;
+	/**
+	 * Set the site title, if no arguments are passed it will use the default
+	 */
+	static function set_title($title = null, $exclude_base = false) {
+		global $site_title;
 
-		self::$_body_classes = array_unique(self::$_body_classes);
-	}
-
-	static function set_title($title = null, $exclude_base_title = false) {
 		if (empty($title)) {
-			if ($exclude_base_title === true) {
+			if ($exclude_base === true) {
 				$title = '';
 			}
 			else {
-				$title = SITE_TITLE;
+				$title = $site_title;
 			}
 		}
 		else {
-			if ($exclude_base_title !== true) {
-				$title .= ' | ' . SITE_TITLE;
+			if ($exclude_base !== true) {
+				$title .= ' | ' . $site_title;
 			}
 		}
 
-		self::$_html_vars['page_title'] = $title;
-	}
-
-	static function set_content($content) {
-		self::$_content = $content;
-	}
-
-	static function get_content() {
-		return self::$_content;
+		Template::set_html_variable('page_title', $title);
 	}
 
 
 	/**
-	 * Hooks properties and methods
+	 * Modules section
 	 */
 
 	// available hooks
-	private static $_hooks = array(
-		'init' => array(),
-		'urls' => array(),
-		'html_variables' => array(),
-		'page_variables' => array(),
-		'js' => array(),
-		'css' => array(),
+	private static $hooks = array(
+		'hook_init' => array(),
+		'hook_urls' => array(),
+		'hook_html_variables' => array(),
+		'hook_page_variables' => array(),
+		'hook_js' => array(),
+		'hook_css' => array(),
 	);
 
-	private static function add_hooks() {
-		// get all defined functions
-		$functions = get_defined_functions();
+	private static function include_modules() {
+		global $modules;
 
-		// add functions to hooks array
-		if (!empty($functions['user'])) {
-			foreach ($functions['user'] as $function) {
-				$hook = substr($function, strpos($function, '_') + 1);
+		foreach ($modules as $module) {
+			require_once(SITE_ROOT . '/core/modules/' . $module . '/' . $module . '.inc');
+		}
+	}
 
-				// check if this is a hook
-				if (array_key_exists($hook, self::$_hooks)) {
-					self::$_hooks[$hook][] = $function;
+	private static function find_hooks() {
+		global $modules;
+
+		// don't mess with the global modules
+		$enabled_modules = $modules;
+
+		// add in our app and theme last as them act as modules
+		$enabled_modules[] = 'app';
+		$enabled_modules[] = 'theme';
+
+		// loop through all hooks and check if each module implements it
+		foreach (self::$hooks as $hook => $functions) {
+			foreach ($enabled_modules as $module) {
+				$function = $module . '_' . $hook;
+
+				if (function_exists($function)) {
+					self::$hooks[$hook][] = $function;
 				}
 			}
 		}
 	}
 
 	static function get_hook_functions($hook) {
-		return self::$_hooks[$hook];
+		return self::$hooks[$hook];
+	}
+
+	static function add_hooks($hooks) {
+		$new_hooks = array();
+
+		foreach ($hooks as $hook) {
+			$new_hooks[$hook] = array();
+		}
+
+		self::$hooks = array_merge(self::$hooks, $new_hooks);
 	}
 
 
@@ -125,7 +201,7 @@ class Core {
 		$urls = array();
 
 		// run all hooks to get all defined url's
-		foreach (self::get_hook_functions('urls') as $function) {
+		foreach (self::get_hook_functions('hook_urls') as $function) {
 			call_user_func_array($function, array(&$urls));
 		}
 
@@ -171,96 +247,30 @@ class Core {
 
 
 	/**
-	 * App javascript. Creates a global js object with site information
+	 * Adds a global js object with js settings and url functions
 	 */
-	private static function add_app_js() {
-		$js = "
-		var App = {
-			Url: {
-				_baseurl: '". Url::generate() ."',
-				_current: '". Url::current(true) ."',
-				_path: ". json_encode(Url::path()) .",
+	private static function get_app_js() {
+		// setup array for replacing variables inside the js file
+		$variables = array(
+			'{#urlbase#}' => Url::generate(),
+			'{#urlcurrent#}' => Url::current(true),
+			'{#urlpath#}' => json_encode(Url::path()),
+			'{#settings#}' => json_encode(self::get_js('settings')),
+		);
 
-				generate: function (path, query) {
-					if (arguments.length == 0) {
-						path = null;
-					}
+		// get the file into a string
+		$js = file_get_contents(SITE_ROOT . '/core/js/app.js');
 
-					var url = this._baseurl;
+		// replace all variables
+		$js = str_replace(array_keys($variables), array_values($variables), $js);
 
-					if (path != null && path.substr(0, 1) != '/') {
-						path = '/' + path;
-					}
-
-					if (path != null) {
-						url += path;
-					}
-
-					if (arguments.length == 2) {
-						var build_query = function (obj, num_prefix, temp_key) {
-						  var output_string = [];
-						 
-						  Object.keys(obj).forEach(function (val) {
-						 
-						    var key = val;
-						 
-						    num_prefix && !isNaN(key) ? key = num_prefix + key : '';
-						 
-						    var key = encodeURIComponent(key.replace(/[!'()*]/g, escape));
-						    temp_key ? key = temp_key + '[' + key + ']' : '';
-						 
-						    if (typeof obj[val] === 'object') {
-						      var query = build_query(obj[val], null, key);
-						      output_string.push(query);
-						    }
-						 	
-						    else if (typeof obj[val] === 'number') {
-						      var value = obj[val];
-						      output_string.push(key + '=' + value);
-						    }
-
-						    else {
-						      var value = encodeURIComponent(obj[val].replace(/[!'()*]/g, escape));
-						      output_string.push(key + '=' + value);
-						    }
-						 
-						  });
-						 
-						  return output_string.join('&');
-						}
-
-						url += '?' + build_query(query);
-					}
-
-					return url;
-				},
-				current: function (include_query_string) {
-					if (include_query_string === true) {
-						return this._current;
-					}
-
-					return this._current.split('?')[0];
-				},
-				path: function (index) {
-					if (!isNaN(index) && isFinite(index)) {
-						return this._path[index];
-					}
-
-					return this._path;
-				},
-				hash: function () {
-					return document.location.hash.replace('#', '');
-				}
-			}
-		};
-		";
-
-		self::add_js('core', $js);
+		// add some js!
+		return $js;
 	}
 
 	private static function error_404() {
 		self::set_title('Page not found');
-		self::$_content = 'Page not found: ' . Url::request_path();
+		return 'Page not found: ' . Url::request_path();
 	}
 
 	/**
@@ -270,159 +280,250 @@ class Core {
 		$theme = Template::get_theme();
 
 		// parse the selected theme's info file and add css and javascripts
-		$config_file = SITE_ROOT . '/app/themes/' . $theme . '/theme.inc';
+		$config_file = SITE_ROOT . '/app/themes/' . $theme . '/theme.config.inc';
 
 		include $config_file;
 
-		$parsed_css = array();
+		foreach ($css as $media => $stylesheet) {
+			// if its just been added without a media, default to all
+			if (is_numeric($media)) {
+				$media = 'all';
+			}
 
-		foreach ($css as $key => $stylesheet) {
+			// check if its a internal or external css file
 			if (filter_var($stylesheet, FILTER_VALIDATE_URL) === false && substr($stylesheet, 0, 2) != '//') {
-				$parsed_css[$key] = Url::generate('app/themes/' . $theme . '/' . $stylesheet);
+				$css_info = array(
+					'media' => $media,
+					'type' => 'internal',
+					'data' => Template::theme_path() . '/' . $stylesheet,
+				);
 			}
 			else {
-				$parsed_css[$key] = $stylesheet;
+				$css_info = array(
+					'media' => $media,
+					'type' => 'external',
+					'data' => $stylesheet,
+				);
 			}
+
+			self::add_css($css_info);
 		}
 
-		Core::add_css($parsed_css);
-
-		$parsed_js = array();
-
-		foreach ($js as $key => $script) {
+		foreach ($js as $script) {
+			// check if its a internal or external js file
 			if (filter_var($script, FILTER_VALIDATE_URL) === false && substr($script, 0, 2) != '//') {
-				$parsed_js[$key] = Url::generate('app/themes/' . $theme . '/' . $script);
+				$js_info = array(
+					'type' => 'internal',
+					'data' => Template::theme_path() . '/' . $script,
+				);
 			}
 			else {
-				$parsed_js[$key] = $script;
+				$js_info = array(
+					'type' => 'external',
+					'data' => $script,
+				);
 			}
-		}
 
-		Core::add_js($parsed_js);
+			self::add_js($js_info);
+		}
 	}
 
 	/**
 	 * Init method, called after configuration and files are loaded
 	 */
-	static function init() {
+	static function init($mode = null) {
+		// include modules
+		self::include_modules();
+
 		// add all available hooks on the system
-		self::add_hooks();
+		self::find_hooks();
 
 		// set the default title
 		self::set_title();
 
-		// add the app script to the html variables
-		self::add_app_js();
-
 		// call the init hook
-		foreach (self::get_hook_functions('init') as $function) {
+		foreach (self::get_hook_functions('hook_init') as $function) {
 			call_user_func_array($function, array());
 		}
 
-		// see if we got a matching url route
-		$page_info = self::find_route();
-
-		if ($page_info !== false) {
-			$content = call_user_func_array($page_info['callback'], array());
-
-			if ($content === false) {
-				self::error_404();
-			}
-			else {
-				if (array_key_exists('type', $page_info)) {
-					self::$_deliver_type = $page_info['type'];
-				}
-
-				if (array_key_exists('title', $page_info)) {
-					self::set_title($page_info['title']);
-				}
-
-				self::$_content = $content;
-			}
+		if ($mode == 'view') {
+			self::view();
 		}
-		else {
-			self::error_404();
-		}
-
-		self::parse_theme_config();
 	}
 
 	// print the final page
 	static function view() {
-		if (self::$_deliver_type == PAGE_CALLBACK_NORMAL) {
-			$page_vars = self::$_page_vars;
-			$page_vars['content'] = self::$_content;
+		// see if we got a matching url route
+		$page_info = self::find_route();
 
-			// let modules interact before the final output
-			foreach (self::get_hook_functions('page_variables') as $function) {
-				call_user_func_array($function, array(&$page_vars));
+		// set default delivery type
+		$delivery_type = self::PAGE_CALLBACK_NORMAL;
+
+		if ($page_info !== false) {
+			// call the page callback
+			$content = false;
+
+			$current_theme = Template::get_theme();
+
+			// check if we explicitly set a theme for this page
+			if (array_key_exists('theme', $page_info)) {
+				Template::set_theme($page_info['theme']);
 			}
 
-			$page = Template::render('page', $page_vars);
-
-			$html_vars = self::$_html_vars;
-			$html_vars['content'] = $page;
-			$html_vars['classes'] = '';
-
-			foreach (self::$_body_classes as $class) {
-				$html_vars['classes'] .= ' ' . $class;
+			if (function_exists($page_info['callback'])) {
+				$content = call_user_func_array($page_info['callback'], array());
 			}
 
-			$html_vars['classes'] = trim($html_vars['classes']);
+			// check if we got any content back
+			if ($content === false) {
+				$content = self::error_404();
 
-			$js = self::$_js;
+				Template::set_theme($current_theme);
+			}
+			else {
+				// check if we explicitly added a page callback type
+				if (array_key_exists('type', $page_info)) {
+					$delivery_type = $page_info['type'];
+				}
+			}
+		}
+		else {
+			$content = self::error_404();
+		}
+
+		// parse the theme config file
+		self::parse_theme_config();
+
+		if ($delivery_type == self::PAGE_CALLBACK_NORMAL) {
+
+			/**
+			 * Javascript
+			 */
+			// get all site javascript
+			$js = self::$js;
 
 			// let modules interact with the js before the final output
-			foreach (self::get_hook_functions('js') as $function) {
+			foreach (self::get_hook_functions('hook_js') as $function) {
 				call_user_func_array($function, array(&$js));
 			}
 
-			foreach ($js as &$script) {
-				if (filter_var($script, FILTER_VALIDATE_URL) === false && substr($script, 0, 2) != '//') {
-					$script = "<script>\r\n" . $script . "\r\n</script>";
+			$app_js = array(
+				'type' => 'inline',
+				'data' => self::get_app_js(),
+			);
+
+			// add in the app js first
+			array_unshift($js['script'], $app_js);
+
+			$script_tags = array();
+
+			foreach ($js['script'] as $script) {
+				if ($script['type'] == 'inline') {
+					$script_tag = "<script>\r\n" . $script['data'] . "\r\n</script>";
 				}
 				else {
-					$script = '<script src="' . $script . '"></script>';
+					// generate absolute url for internal files
+					if ($script['type'] == 'internal') {
+						$script['data'] = Url::generate($script['data']);
+					}
+
+					$script_tag = '<script src="' . $script['data'] . '"></script>';
 				}
+
+				$script_tags[] = $script_tag;
 			}
 
-			$html_vars['js'] = "\r\n" . implode("\r\n", $js) . "\r\n";
+			$js_html = "\r\n" . implode("\r\n", $script_tags) . "\r\n";
 
-			$css = self::$_css;
+
+			/**
+			 * Css
+			 */
+			$css = self::$css;
 
 			// let modules interact with the js before the final output
-			foreach (self::get_hook_functions('css') as $function) {
+			foreach (self::get_hook_functions('hook_css') as $function) {
 				call_user_func_array($function, array(&$css));
 			}
 
-			foreach ($css as &$style) {
-				if (filter_var($style, FILTER_VALIDATE_URL) === false && substr($style, 0, 2) != '//') {
-					$style = '<style>' . $style . '</style>';
+			$style_tags = array();
+
+			foreach ($css as $style) {
+				if ($style['type'] == 'inline') {
+					$style_tag = '<style media="' . $style['media'] . '">' . $style['data'] . '</style>';
 				}
 				else {
-					$style = '<link rel="stylesheet" href="' . $style . '">';
+					if ($style['type'] == 'internal') {
+						$style['data'] = Url::generate($style['data']);
+					}
+
+					$style_tag = '<link rel="stylesheet" media="' . $style['media'] . '" href="' . $style['data'] . '">';
 				}
+
+				$style_tags[] = $style_tag;
 			}
 
-			$html_vars['css'] = "\r\n" . implode("\r\n", $css) . "\r\n";
+			$css_html = "\r\n" . implode("\r\n", $style_tags) . "\r\n";
+
+
+			/**
+			 * Page template
+			 */
+			// get page variables from the template class
+			$page_variables = Template::get_page_variables();
+
+			// add the content to the page variable
+			$page_variables['content'] = $content;
 
 			// let modules interact before the final output
-			foreach (self::get_hook_functions('page_variables') as $function) {
-				call_user_func_array($function, array(&$html_vars));
+			foreach (self::get_hook_functions('hook_page_variables') as $function) {
+				call_user_func_array($function, array(&$page_variables));
 			}
 
-			$html = Template::render('html', $html_vars);
+			// render the page template
+			$page_content = Template::render('page', $page_variables);
+
+
+			/**
+			 * Html template
+			 */
+			// get html variables from the template class
+			$html_variables = Template::get_html_variables();
+
+			// add the rendered page template to the html template
+			$html_variables['content'] = $page_content;
+
+			// no classes by default
+			$html_variables['classes'] = '';
+
+			foreach (Template::get_body_classes() as $class) {
+				$html_variables['classes'] .= ' ' . $class;
+			}
+
+			// remove trailing and ending whitespace
+			$html_variables['classes'] = trim($html_variables['classes']);
+
+			// add js and css
+			$html_variables['js'] = $js_html;
+			$html_variables['css'] = $css_html;
+
+			// let modules interact before the final output
+			foreach (self::get_hook_functions('hook_page_variables') as $function) {
+				call_user_func_array($function, array(&$html_variables));
+			}
+
+			$html = Template::render('html', $html_variables);
 
 			header('Content-Type: text/html; charset=UTF-8');
 
 			print $html;
 		}
-		elseif (self::$_deliver_type == PAGE_CALLBACK_BLANK) {
-			print self::$_content;
+		elseif ($delivery_type == self::PAGE_CALLBACK_BLANK) {
+			print $content;
 		}
-		elseif (self::$_deliver_type == PAGE_CALLBACK_AJAX) {
+		elseif ($delivery_type == self::PAGE_CALLBACK_JSON) {
 			header('Content-type: application/json');
-			print json_encode(self::$_content);
+			print json_encode($content);
 		}
 	}
 }
