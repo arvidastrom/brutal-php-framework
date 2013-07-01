@@ -15,9 +15,17 @@ class Url {
 	 * @return string The url to the site root or the the chosen path.
 	 */
 	static function generate($path = null, $options = array()) {
+		// do not default to absolute url's if this is an internal url
+		$absolute = false;
+
+		// default to absolute if this is an external url
+		if (array_key_exists('external', $options) && $options['external'] == true) {
+			$absolute = true;
+		}
+
 		$defaults = array(
 			'external' => false,
-			'absolute' => true,
+			'absolute' => $absolute,
 			'query' => array(),
 			'hash' => array(),
 			'https' => self::https(),
@@ -86,6 +94,24 @@ class Url {
 
 		if (!empty($options['hash'])) {
 			$build_url .= '#' . $options['hash'];
+		}
+
+		if (empty($options['absolute'])) {
+			// get the scheme
+			$url_info = parse_url($build_url);
+			// remove the scheme in the url
+			$build_url = substr_replace($build_url, '', 0, strlen($url_info['scheme'] . '://'));
+			// explode it by '/'
+			$url_parts = explode('/', $build_url);
+			// remove the hostname (the part before the first '/')
+			array_shift($url_parts);
+			// put it back together
+			$build_url = implode('/', $url_parts);
+
+			// make sure we have a beginning slash
+			if (substr($build_url, 0, 1) != '/') {
+				$build_url = '/' . $build_url;
+			}
 		}
 
 		return $build_url;
