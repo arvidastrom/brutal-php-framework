@@ -35,7 +35,7 @@ function facebook_hook_urls(&$urls) {
 	if ($settings != null) {
 		$urls['modules/facebook/channel.html'] = array(
 			'callback' => 'facebook_page_channel',
-			'type' => Core::PAGE_CALLBACK_BLANK,
+			'type' => Brutal::PAGE_CALLBACK_BLANK,
 		);
 	}
 }

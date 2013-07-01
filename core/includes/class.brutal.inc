@@ -1,55 +1,114 @@
 <?php
-class Core {
+ /**
+  * Brutal class.
+  *
+  * Handles all core functionality, such as url rewrites and hook system.
+  * 
+  * @package Core
+  */
+class Brutal {
 	/**
-	* Normal page view
-	*
-	* Prints html and page template files wrapped around the content
-	*/
+	 * Normal page view
+	 *
+	 * Prints html and page template files wrapped around the content
+	 */
 	const PAGE_CALLBACK_NORMAL = 0;
 
 	/**
-	* Json page view
-	*
-	* Prints the returned data as json encoded without html and page template
-	*/
+	 * Json page view
+	 *
+	 * Prints the returned data as json encoded without html and page template
+	 */
 	const PAGE_CALLBACK_JSON = 1;
 
 	/**
-	* Blank page view
-	*
-	* Prints the returned data as plain text encoded without html and page template
-	*/
+	 * Blank page view
+	 *
+	 * Prints the returned data as plain text encoded without html and page template
+	 */
 	const PAGE_CALLBACK_BLANK = 2;
 
 	/**
-	* Stores all javascript
-	*
-	* @access private
-	* @var string
-	*/
+	 * Stores all javascript
+	 *
+	 * @access private
+	 * @var array
+	 */
 	private static $js = array(
 		'script' => array(),
 		'settings' => array(),
 	);
 
 	/**
-	* Stores all css
-	*
-	* @access private
-	* @var string
-	*/
+	 * Stores all css
+	 *
+	 * @access private
+	 * @var array
+	 */
 	private static $css = array();
 
 	/**
-	* The page delivery type
-	*
-	* @access private
-	* @var string
-	*/
+	 * The page delivery type
+	 *
+	 * @access private
+	 * @var string
+	 */
 	private static $page_delivery_type;
 
 	/**
-	 * Add javascript files / variables to the site
+	 * Add javascript files / variables to the site.
+	 *
+	 * Add internal/external, inline javascript files or settings passed on to the
+	 * App.Settings javascript object.
+	 *
+	 * * Settings are merged into one final, so beware of overwriting previous settings.
+	 *
+	 * Examples:
+	 *
+	 * * Add an internal script
+	 *
+	 * <code>
+	 * $js = array(
+	 * 	'type' => 'internal',
+	 * 	'data' => 'app/js/phpjs.js',
+	 * );
+	 * Brutal::add_js($js);
+	 * </code>
+	 *
+	 * * Add an external script
+	 *
+	 * <code>
+	 * $js = array(
+	 * 	'type' => 'external',
+	 * 	'data' => '//ajax.googleapis.com/ajax/libs/jquery/latest/jquery.min.js',
+	 * );
+	 * Brutal::add_js($js);
+	 * </code>
+	 *
+	 * * Add inline script
+	 *
+	 * <code>
+	 * $js = array(
+	 * 	'type' => 'inline',
+	 * 	'data' => 'document.write("Hello World");',
+	 * );
+	 * Brutal::add_js($js);
+	 * </code>
+	 *
+	 * * Add settings
+	 *
+	 * <code>
+	 * $js = array(
+	 * 	'page-urls' => array(
+	 *		'page/info',
+	 *		'page/contact',
+	 * 	),
+	 * );
+	 * Brutal::add_js($js, 'settings');
+	 * </code>
+	 *
+	 * @param array $info  Array containing information about the script added.
+	 * @param string $type Type of js to add.
 	 */
 	static function add_js($info, $type = 'script') {
 		// handle setting explicitly
@@ -73,7 +132,13 @@ class Core {
 	}
 
 	/**
-	 * Get all or specific javascript on the site
+	 * Get all or specific js previously added.
+	 *
+	 * Returns all js or script/settings.
+	 *
+	 * @param string|null $type The type to retrieve. Either 'script' or 'settings'.
+	 *
+	 * @return array The specified type or all javascript.
 	 */
 	static function get_js($type = null) {
 		if ($type !== null) {
@@ -84,7 +149,47 @@ class Core {
 	}
 
 	/**
-	 * Add css files / styles to the site
+	 * Add css files/styles.
+	 *
+	 * Add internal/external or inline styles to be outputted in the template.
+	 *
+	 * * The media key in {@$info} specifies the media query to use.
+	 *
+	 * Examples:
+	 *
+	 * * Add an internal style
+	 *
+	 * <code>
+	 * $style = array(
+	 * 	'type' => 'internal',
+	 *	'media' => 'all',
+	 * 	'data' => 'app/css/reset.css',
+	 * );
+	 * Brutal::add_css($style);
+	 * </code>
+	 *
+	 * * Add an external style
+	 *
+	 * <code>
+	 * $style = array(
+	 * 	'type' => 'external',
+	 *	'media' => 'screen',
+	 * 	'data' => 'http://styles.cdn.com/style.css',
+	 * );
+	 * Brutal::add_css($style);
+	 * </code>
+	 *
+	 * * Add inline style
+	 *
+	 * <code>
+	 * $style = array(
+	 * 	'type' => 'inline',
+	 * 	'data' => 'body { color: #fff; };',
+	 * );
+	 * Brutal::add_css($style);
+	 * </code>
+	 *
+	 * @param array $info  Array containing information about the style added.
 	 */
 	static function add_css($info) {
 		// create a default options array
@@ -101,7 +206,11 @@ class Core {
 	}
 
 	/**
-	 * Get all or specific css on the site
+	 * Get all styles previously added.
+	 *
+	 * Returns all added styles.
+	 *
+	 * @return array All css added using the Brutal::add_css method.
 	 */
 	static function get_css() {
 		return self::$css;
@@ -252,7 +361,7 @@ class Core {
 	private static function get_app_js() {
 		// setup array for replacing variables inside the js file
 		$variables = array(
-			'{#urlbase#}' => Url::generate(),
+			'{#urlbase#}' => rtrim(Url::generate(), '/'),
 			'{#urlcurrent#}' => Url::current(true),
 			'{#urlpath#}' => json_encode(Url::path()),
 			'{#settings#}' => json_encode(self::get_js('settings')),

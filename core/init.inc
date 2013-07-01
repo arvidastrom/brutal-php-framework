@@ -1,8 +1,17 @@
 <?php
-// start the session
+/**
+ * Start the session.
+ *
+ * Always start to session to be able to use the session class.
+ */
 session_start();
 
-// Strip magic quotes from request data.
+/**
+ * Fix magic quotes.
+ *
+ * Cleans up post, get, cookie and request global variables
+ * from the ugliness put on by magic quotes.
+ */
 if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
 	// Create lamba style unescaping function (for portability)
 	$quotes_sybase = strtolower(ini_get('magic_quotes_sybase'));
@@ -23,37 +32,94 @@ if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
 	$stripslashes_deep($_REQUEST, $stripslashes_deep);
 }
 
-// send P3P Compact Policy (CP) headers to prevent IE from blocking cookies
+/**
+ * P3P Compact Policy (CP) headers.
+ *
+ * Send P3P Compact Policy (CP) headers to prevent IE from blocking cookies
+ */
 header('P3P: CP="CAO PSA OUR"');
 
-// define the root directory of the site (this file's directory)
+
+/**
+ * Site root constant.
+ *
+ * Defines the root of the framework, one level up from this file.
+ */
 define('SITE_ROOT', dirname(dirname(__FILE__)));
 
-// include configuration
+/**
+ * Include configuration file.
+ */
 require_once(SITE_ROOT . '/app/config.inc');
 
-// Show all errors on development mode
+/**
+ * Error reporting.
+ *
+ * Turns on all error reporting when developing and
+ * keeps it off on production.
+ */
 if (!empty($development)) {
 	error_reporting(E_ALL);
+
+	if (!empty($pretty_errors)) {
+		/**
+		 * Include advanced error reporting features
+		 */
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Exception/ErrorException.php');
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Exception/Frame.php');
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Exception/FrameCollection.php');
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Exception/Inspector.php');
+
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/HandlerInterface.php');
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/Handler.php');
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/CallbackHandler.php');
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/JsonResponseHandler.php');
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/PrettyPageHandler.php');
+
+		include_once(SITE_ROOT . '/core/libraries/Whoops/Run.php');
+
+		$run = new Whoops\Run;
+		$handler = new Whoops\Handler\PrettyPageHandler;
+		$run->pushHandler($handler);
+		$run->register();
+	}
 }
 else {
 	error_reporting(0);
 }
 
-// includes classes
+/**
+ * Includes all core static classes.
+ */
 require_once(SITE_ROOT . '/core/includes/class.url.inc');
 require_once(SITE_ROOT . '/core/includes/class.session.inc');
 require_once(SITE_ROOT . '/core/includes/class.variable.inc');
 require_once(SITE_ROOT . '/core/includes/class.database.inc');
 require_once(SITE_ROOT . '/core/includes/class.template.inc');
-require_once(SITE_ROOT . '/core/includes/class.core.inc');
+require_once(SITE_ROOT . '/core/includes/class.brutal.inc');
 
-// external libraries
+/**
+ * Include the app "module" file.
+ */
+require_once(SITE_ROOT . '/app/app.inc');
+
+/**
+ * Includes all external libraries.
+ *
+ * @todo: Possibly move these into each own separate module, they might not always be needed.
+ */
 require_once(SITE_ROOT . '/core/libraries/RedBeanPHP3_4_7/rb.php');
 require_once(SITE_ROOT . '/core/libraries/Swift-5.0.1/lib/swift_required.php');
 
-// configure redbean
+/**
+ * Configure redbeanphp.
+ *
+ * Configures all databases to redbeanphp.
+ *
+ * @todo: Possibly move this to a separate module and use the Database class in the Variable class.
+ */
 foreach ($databases as $dbkey => $dbinfo) {
+	// setup redbeanphp with the default db
 	if ($dbkey == 'default') {
 		R::setup('mysql:host=' . $dbinfo['host'] . ';dbname=' . $dbinfo['name'], $dbinfo['user'], $dbinfo['pass']);
 
@@ -62,10 +128,8 @@ foreach ($databases as $dbkey => $dbinfo) {
 			R::freeze(true);
 		}
 	}
+	// add additional databases
 	else {
 		R::addDatabase($dbkey, 'mysql:host=' . $dbinfo['host'] . ';dbname=' . $dbinfo['name'], $dbinfo['user'], $dbinfo['pass'], true);
 	}
 }
-
-// include the app file
-require_once(SITE_ROOT . '/app/app.inc');

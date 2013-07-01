@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpdoc>
+  <parser>
+    <target>docs</target>
+    <extensions>
+      <extension>php</extension>
+      <extension>inc</extension>
+    </extensions>
+  </parser>
+  <transformer>
+    <target>docs</target>
+  </transformer>
+  <files>
+    <file>index.php</file>
+    <directory>core</directory>
+    <ignore>core/libraries/*</ignore>
+    <ignore>core/modules/facebook/facebook_sdk/*</ignore>
+    <ignore>core/modules/instagram/instagram.class.php</ignore>
+  </files>
+</phpdoc>

@@ -9,14 +9,17 @@ var App = {
 				path = null;
 			}
 
-			var url = this._baseurl;
-
-			if (path != null && path.substr(0, 1) != '/') {
-				path = '/' + path;
-			}
+			var build_url = this._baseurl;
 
 			if (path != null) {
-				url += path;
+				if (path.substr(0, 1) != '/') {
+					path = '/' + path;
+				}
+
+				build_url += path;
+			}
+			else {
+				build_url += '/';
 			}
 
 			if (typeof options === 'object' && options.query) {
@@ -52,10 +55,10 @@ var App = {
 				  return output_string.join('&');
 				}
 
-				url += '?' + build_query(query);
+				build_url += '?' + build_query(query);
 			}
 
-			return url;
+			return build_url;
 		},
 		current: function (include_query_string) {
 			if (include_query_string === true) {
