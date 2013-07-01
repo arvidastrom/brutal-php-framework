@@ -393,26 +393,16 @@ class Brutal {
 
 		include $config_file;
 
-		foreach ($css as $media => $stylesheet) {
-			// if its just been added without a media, default to all
-			if (is_numeric($media)) {
-				$media = 'all';
+		foreach ($css as $stylesheet) {
+			// if the stylesheet is an array, we have media queries
+			if (is_array($stylesheet)) {
+				foreach ($stylesheet as $media => $media_stylesheet) {
+					$css_info = self::parse_theme_css($media, $media_stylesheet);
+				}
 			}
-
-			// check if its a internal or external css file
-			if (filter_var($stylesheet, FILTER_VALIDATE_URL) === false && substr($stylesheet, 0, 2) != '//') {
-				$css_info = array(
-					'media' => $media,
-					'type' => 'internal',
-					'data' => Template::theme_path() . '/' . $stylesheet,
-				);
-			}
+			// if its not, no media query was defined. Default to all.
 			else {
-				$css_info = array(
-					'media' => $media,
-					'type' => 'external',
-					'data' => $stylesheet,
-				);
+				$css_info = self::parse_theme_css('all', $stylesheet);
 			}
 
 			self::add_css($css_info);
@@ -435,6 +425,26 @@ class Brutal {
 
 			self::add_js($js_info);
 		}
+	}
+
+	private static function parse_theme_css($media, $stylesheet) {
+		// check if its a internal or external css file
+		if (filter_var($stylesheet, FILTER_VALIDATE_URL) === false && substr($stylesheet, 0, 2) != '//') {
+			$css_info = array(
+				'media' => $media,
+				'type' => 'internal',
+				'data' => Template::theme_path() . '/' . $stylesheet,
+			);
+		}
+		else {
+			$css_info = array(
+				'media' => $media,
+				'type' => 'external',
+				'data' => $stylesheet,
+			);
+		}
+
+		return $css_info;
 	}
 
 	/**
