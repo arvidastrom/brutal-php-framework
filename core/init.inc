@@ -53,6 +53,11 @@ define('SITE_ROOT', dirname(dirname(__FILE__)));
 require_once(SITE_ROOT . '/app/config.inc');
 
 /**
+ * Include composer autoload
+ */
+require_once(SITE_ROOT . '/vendor/autoload.php');
+
+/**
  * Error reporting.
  *
  * Turns on all error reporting when developing and
@@ -65,19 +70,6 @@ if (!empty($development)) {
 		/**
 		 * Include advanced error reporting features
 		 */
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Exception/ErrorException.php');
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Exception/Frame.php');
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Exception/FrameCollection.php');
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Exception/Inspector.php');
-
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/HandlerInterface.php');
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/Handler.php');
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/CallbackHandler.php');
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/JsonResponseHandler.php');
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Handler/PrettyPageHandler.php');
-
-		include_once(SITE_ROOT . '/core/libraries/Whoops/Run.php');
-
 		$run = new Whoops\Run;
 		$handler = new Whoops\Handler\PrettyPageHandler;
 		$run->pushHandler($handler);
@@ -102,34 +94,3 @@ require_once(SITE_ROOT . '/core/includes/class.brutal.inc');
  * Include the app "module" file.
  */
 require_once(SITE_ROOT . '/app/app.inc');
-
-/**
- * Includes all external libraries.
- *
- * @todo: Possibly move these into each own separate module, they might not always be needed.
- */
-require_once(SITE_ROOT . '/core/libraries/RedBeanPHP3_4_7/rb.php');
-require_once(SITE_ROOT . '/core/libraries/Swift-5.0.1/lib/swift_required.php');
-
-/**
- * Configure redbeanphp.
- *
- * Configures all databases to redbeanphp.
- *
- * @todo: Possibly move this to a separate module and use the Database class in the Variable class.
- */
-foreach ($databases as $dbkey => $dbinfo) {
-	// setup redbeanphp with the default db
-	if ($dbkey == 'default') {
-		R::setup('mysql:host=' . $dbinfo['host'] . ';dbname=' . $dbinfo['name'], $dbinfo['user'], $dbinfo['pass']);
-
-		// dont change the database after deployment
-		if (empty($development)) {
-			R::freeze(true);
-		}
-	}
-	// add additional databases
-	else {
-		R::addDatabase($dbkey, 'mysql:host=' . $dbinfo['host'] . ';dbname=' . $dbinfo['name'], $dbinfo['user'], $dbinfo['pass'], true);
-	}
-}

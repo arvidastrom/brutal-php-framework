@@ -1,0 +1,7 @@
+{
+    "require": {
+        "swiftmailer/swiftmailer": "5.0.1",
+        "gabordemooij/redbean": "dev-master",
+        "filp/whoops": "1.0.7"
+    }
+}
