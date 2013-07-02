@@ -22,6 +22,7 @@ $pretty_errors = true;
 $modules = array(
 	'facebook',
 	'instagram',
+	'redbeanphp',
 );
 
 // Session prefix, used to namespace the site to avoid collisions with other sites on the server

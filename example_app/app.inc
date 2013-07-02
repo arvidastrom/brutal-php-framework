@@ -23,11 +23,6 @@ function app_hook_urls(&$urls) {
 		'callback' => 'app_page_home',
 		'type' => Brutal::PAGE_CALLBACK_NORMAL,
 	);
-
-	$urls['about'] = array(
-		'callback' => 'app_page_about',
-		'type' => Brutal::PAGE_CALLBACK_NORMAL,
-	);
 }
 
 
@@ -36,8 +31,4 @@ function app_hook_urls(&$urls) {
  */
 function app_page_home() {
 	return Template::render('page-home');
-}
-
-function app_page_about() {
-	return Template::render('page-about');
 }
