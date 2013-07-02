@@ -214,7 +214,7 @@ class Url {
 		if ($url === null) {
 			$url = self::current($include_query_string);
 		}
-		elseif (stripos('http', $url) === false) {
+		elseif (stripos($url, 'http') === false) {
 			$url = self::generate($url);
 		}
 		
