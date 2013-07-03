@@ -22,6 +22,9 @@
 					});
 				}
 			});
+		},
+		inCanvas: function () {
+			return (window.location != window.parent.location);
 		}
 	};
 
