@@ -91,8 +91,12 @@ class Database {
 		}
 
 		$server_info = $databases[$key];
+		try {
+			$db = new PDO('mysql:host=' . $server_info['host'] .';dbname='. $server_info['name'], $server_info['user'], $server_info['pass'], array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
+		} catch (PDOException $e) {
+			throw new Exception('Could not connect to database ' . $key . '. PDO error: ' . $e->getMessage());
+		}
 
-		$db = new PDO('mysql:host=' . $server_info['host'] .';dbname='. $server_info['name'], $server_info['user'], $server_info['pass'], array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
 		$db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_OBJ);
 
 		if ($development) {
