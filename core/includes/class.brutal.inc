@@ -361,7 +361,7 @@ class Brutal {
 	private static function get_app_js() {
 		// setup array for replacing variables inside the js file
 		$variables = array(
-			'{#urlbase#}' => rtrim(Url::generate(), '/'),
+			'{#urlbase#}' => rtrim(Url::generate('/', array('absolute' => true)), '/'),
 			'{#urlcurrent#}' => Url::current(true),
 			'{#urlpath#}' => json_encode(Url::path()),
 			'{#settings#}' => json_encode(self::get_js('settings')),
