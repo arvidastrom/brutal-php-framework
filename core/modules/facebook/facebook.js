@@ -34,7 +34,8 @@
 			appId      : '{#appid#}', // App ID from the app dashboard
 			channelUrl : '{#channel#}', // Channel file for x-domain comms
 			status     : true, // Check Facebook Login status
-			xfbml      : true  // Look for social plugins on the page
+			xfbml      : true, // Look for social plugins on the page
+			cookie     : true
 		});
 
 		fbready = true;
