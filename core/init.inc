@@ -81,6 +81,11 @@ else {
 }
 
 /**
+ * Include po parser for Language class
+ */
+require_once(SITE_ROOT . '/core/includes/poparser.php');
+
+/**
  * Includes all core static classes.
  */
 require_once(SITE_ROOT . '/core/includes/class.url.inc');
