@@ -61,7 +61,14 @@ class Language {
 			$locale = self::$locale;
 
 			if ($locale === null) {
-				return $msgid;
+				global $locale;
+
+				if (!empty($locale)) {
+					self::$locale = $locale;
+				}
+				else {
+					return $msgid;
+				}
 			}
 		}
 

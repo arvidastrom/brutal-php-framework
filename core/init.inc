@@ -91,6 +91,7 @@ require_once(SITE_ROOT . '/core/includes/poparser.php');
 require_once(SITE_ROOT . '/core/includes/class.url.inc');
 require_once(SITE_ROOT . '/core/includes/class.session.inc');
 require_once(SITE_ROOT . '/core/includes/class.variable.inc');
+require_once(SITE_ROOT . '/core/includes/class.language.inc');
 require_once(SITE_ROOT . '/core/includes/class.database.inc');
 require_once(SITE_ROOT . '/core/includes/class.template.inc');
 require_once(SITE_ROOT . '/core/includes/class.brutal.inc');
