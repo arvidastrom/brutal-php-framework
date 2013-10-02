@@ -39,7 +39,6 @@ if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
  */
 header('P3P: CP="CAO PSA OUR"');
 
-
 /**
  * Site root constant.
  *
@@ -51,6 +50,18 @@ define('SITE_ROOT', dirname(dirname(__FILE__)));
  * Include configuration file.
  */
 require_once(SITE_ROOT . '/app/config.inc');
+
+/**
+ * Sets the locale
+ */
+if (!empty($locale)) {
+	setlocale(LC_ALL, $locale . '.UTF-8');
+}
+
+/**
+ * Sets internal encoding to UTF-8
+ */
+mb_internal_encoding('UTF-8');
 
 /**
  * Include composer autoload

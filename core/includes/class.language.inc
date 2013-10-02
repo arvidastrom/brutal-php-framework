@@ -91,6 +91,10 @@ class Language {
 	 * @param string $locale The locale of the .po file
 	 */
 	private static function readTranslations($locale) {
+		if (!self::validateLocale($locale)) {
+			throw new Exception('Invalid locale: ' . $locale);
+		}
+
 		$file = SITE_ROOT . '/app/translations/' . $locale . '.po';
 
 		if (file_exists($file)) {
@@ -101,5 +105,34 @@ class Language {
 			self::$translations[$locale] = array();
 			throw new Exception('Missing language file: ' . $file);
 		}
+	}
+
+	/**
+	 * Validates the supplied locale
+	 *
+	 * @access private
+	 *
+	 * @param string $locale
+	 *
+	 * @return bool
+	 */
+	private static function validateLocale($locale) {
+		$locale = $explode('_', $locale);
+
+		// Make sure we got 2 indexes
+		if (sizeof($locale) !== 2) {
+			return false;
+		}
+
+		// Check that the size of both is 2
+		if (strlen($locale[0]) !== 2 || strlen($locale[1]) !== 2) {
+			return false;
+		}
+
+		if (!ctype_lower($locale[0]) || !ctype_upper($locale[1])) {
+			return false;
+		}
+
+		return true;
 	}
 }
