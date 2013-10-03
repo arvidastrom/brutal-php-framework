@@ -95,7 +95,7 @@ function facebook_likes_page() {
 	if ($facebook != null) {
 		$signed_request = $facebook->getSignedRequest();
 
-		if ($signed_request['page']['liked'] == 1) {
+		if (!empty($signed_request['page']['liked']) && $signed_request['page']['liked'] == 1) {
 			return true;
 	 	}
 		else if (isset($signed_request['page']['liked'])) {
