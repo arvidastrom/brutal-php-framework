@@ -52,11 +52,12 @@ class Language {
 	 * @todo Add support for plural.
 	 *
 	 * @param string $msgid The msgid in the .po file
+	 * @param string $replacements Specify replacement tokens for translated string. Use @token for the text to be sanitized, !token for token that should be inserted as is.
 	 * @param string $locale Optionally specify another language than the default one.
 	 *
 	 * @return string The translated message if it exists in the current locale, if not, returns the msgid.
 	 */
-	static function translate($msgid, $locale = null) {
+	static function translate($msgid, $replacements = array(), $locale = null) {
 		if ($locale === null) {
 			$locale = self::$locale;
 
@@ -77,7 +78,24 @@ class Language {
 		}
 
 		if (array_key_exists($msgid, self::$translations[$locale])) {
-			return self::$translations[$locale][$msgid]['msgstr'][0];
+			$msgid = self::$translations[$locale][$msgid]['msgstr'][0];
+
+			// Replace tokens inside msgid's
+			foreach ($replacements as $replacement => $value) {
+				$token = substr($replacement, 0, 1);
+
+				// Sanitize everything
+				if ($token == '@') {
+					$value = filter_var($value, FILTER_SANITIZE_STRING);
+				}
+
+				// ! indicates it should be inserted as is, if thats not specified remove it completely
+				elseif ($token != '!') {
+					$value = '';
+				}
+
+				$msgid = str_replace($replacement, $value, $msgid);
+			}
 		}
 
 		return $msgid;
@@ -117,7 +135,7 @@ class Language {
 	 * @return bool
 	 */
 	private static function validateLocale($locale) {
-		$locale = $explode('_', $locale);
+		$locale = explode('_', $locale);
 
 		// Make sure we got 2 indexes
 		if (sizeof($locale) !== 2) {
