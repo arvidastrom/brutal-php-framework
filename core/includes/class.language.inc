@@ -40,6 +40,14 @@ class Language {
 	 * @return string Current locale
 	 */
 	static function getLocale() {
+		if (self::$locale === null) {
+			global $locale;
+
+			if (!empty($locale)) {
+				self::$locale = $locale;
+			}
+		}
+
 		return self::$locale;
 	}
 
@@ -59,17 +67,10 @@ class Language {
 	 */
 	static function translate($msgid, $replacements = array(), $locale = null) {
 		if ($locale === null) {
-			$locale = self::$locale;
+			$locale = self::getLocale();
 
 			if ($locale === null) {
-				global $locale;
-
-				if (!empty($locale)) {
-					self::$locale = $locale;
-				}
-				else {
-					return $msgid;
-				}
+				return $msgid;
 			}
 		}
 
