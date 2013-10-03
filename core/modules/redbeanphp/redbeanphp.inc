@@ -1,7 +1,7 @@
 <?php
 class R extends RedBean_Facade {};
 
-global $databases;
+global $databases, $development;
 
 /**
  * Configure redbeanphp.
