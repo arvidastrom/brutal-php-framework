@@ -55,7 +55,7 @@ var App = {
 				  return output_string.join('&');
 				}
 
-				build_url += '?' + build_query(query);
+				build_url += '?' + build_query(options.query);
 			}
 
 			return build_url;
