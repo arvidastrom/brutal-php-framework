@@ -30,3 +30,6 @@ $session_prefix = 'brutal';
 
 // Default theme
 $theme = 'brutal';
+
+// Site locale
+$locale = 'sv_SE';
